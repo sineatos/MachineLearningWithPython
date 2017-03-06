@@ -6,17 +6,10 @@
 @contact: sineatos@gmail.com
 """
 
-import sys
 import os
 import jieba
-import cPickle as pickle
+import pickle
 from sklearn.datasets.base import Bunch
-from sklearn import feature_extraction
-from sklearn.feature_extraction.text import TfidfTransformer  # TF-IDF向量转换类
-from sklearn.feature_extraction.text import TfidfVectorizer  # TF-IDF向量生成类
-
-reload(sys)
-sys.setdefaultencoding('utf-8')
 
 # 全局变量
 train_word_bag = "train_word_bag"
@@ -37,18 +30,16 @@ seg_path = "train_corpus_seg"  # 分词后分类语料库路径
 
 ###########################################################################
 
-
-
-# 将字符串保存到文件里面
 def savefile(savepath, content):
-    fp = open(savepath, "wb")
+    """将字符串保存到文件里面"""
+    fp = open(savepath, "w")
     fp.write(content)
     fp.close()
 
 
-# 从文件中读取字符串
 def readfile(path):
-    fp = open(path, "rb")
+    """从文件中读取字符串"""
+    fp = open(path, "r")
     content = fp.read()
     fp.close()
     return content
@@ -71,7 +62,7 @@ def cut_words():
             content = content.replace("\r\n", "").strip()  # 删除换行和多余的空格
             content_seg = jieba.cut(content)
             savefile(os.path.join(seg_dir, file_path), " ".join(content_seg))
-    print "中文分词结束!!"
+    print("中文分词结束!!")
 
 
 def save_into_bunch():
@@ -89,25 +80,24 @@ def save_into_bunch():
     file_obj = open(wordbag_path, "wb")
     pickle.dump(bunch, file_obj)
     file_obj.close()
-    print "构建文本对象结束！！！"
+    print("构建文本对象结束！！！")
 
 
-# 读取Bunch对象
 def read_bunch_obj(path):
+    """读取Bunch对象"""
     file_obj = open(path, "rb")
     bunch_obj = pickle.load(file_obj)
     file_obj.close()
     return bunch_obj
 
 
-# 写入Bunch对象
 def write_bunch_obj(path, bunch_obj):
+    """写入Bunch对象"""
     file_obj = open(path, "wb")
     pickle.dump(bunch_obj, file_obj)
     file_obj.close()
 
 
 if __name__ == "__main__":
-    # cut_words()
-    save_into_bunch()
-    pass
+    cut_words()
+    # save_into_bunch()
