@@ -16,9 +16,11 @@ def test_ID3Tree():
     labels = ['age', 'revenue', 'student', 'credit']
     dtree.load_data_set(dataset_path, labels)
     dtree.train()
-    ID3DTree.store_tree(dtree.tree, save_path)
-    tree = ID3DTree.grab_tree(save_path)
-    pp(tree)
+    # ID3DTree.store_tree(dtree.tree, save_path)
+    # tree = ID3DTree.grab_tree(save_path)
+    # pp(tree)
+    vector = ['0', '1', '0', '0']  # no
+    print(ID3DTree.predict(dtree.tree, labels, vector))
 
 
 if __name__ == "__main__":

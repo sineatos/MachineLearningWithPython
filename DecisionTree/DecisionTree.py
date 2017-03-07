@@ -64,6 +64,26 @@ class ID3DTree:
         return tree
 
     @staticmethod
+    def predict(input_tree, feat_labels, test_vec):
+        """
+        预测分类
+        :param input_tree: 决策树字典
+        :param feat_labels: 特征列表
+        :param test_vec: 一组数据
+        :return: 预测的分类标识
+        """
+        root = tuple(input_tree.keys())[0]  # 获取树根节点(划分特征标识)
+        second_dict = input_tree[root]  # value-子树结构或分类标签
+        feat_index = feat_labels.index(root)  # 划分特征标识在分类标签集中的位置
+        key = test_vec[feat_index]  # 测试数据的划分特征取值
+        value_of_feat = second_dict[key]  # 找出对应取值的分支
+        if isinstance(value_of_feat, dict):
+            class_label = ID3DTree.predict(value_of_feat, feat_labels, test_vec)
+        else:
+            class_label = value_of_feat
+        return class_label
+
+    @staticmethod
     def max_cate(cate_list):
         """
         返回列表中出现最多的类别标识
