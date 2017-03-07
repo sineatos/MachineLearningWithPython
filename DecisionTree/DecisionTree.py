@@ -170,3 +170,60 @@ class ID3DTree:
                 r_feat_vec.extend(feat_vec[axis + 1:])
                 rtn_list.append(r_feat_vec)
         return rtn_list
+
+
+class C45DTree(ID3DTree):
+    def __init__(self):
+        super(C45DTree, self).__init__()
+
+    def build_tree(self, data_set, labels):
+        cate_list = [data[-1] for data in data_set]
+        if cate_list.count(cate_list[0]) == len(cate_list):
+            return cate_list[0]
+        if len(data_set[0]) == 1:
+            return C45DTree.max_cate(cate_list)
+        best_feat, feat_value_list = C45DTree.get_best_feat(data_set)
+        best_feat_label = labels[best_feat]
+        tree = {best_feat_label: {}}
+        del labels[best_feat]
+        for value in feat_value_list:
+            sub_labels = labels[:]
+            split_data_set = C45DTree.split_data_set(data_set, best_feat, value)
+            sub_tree = self.build_tree(split_data_set, sub_labels)
+            tree[best_feat_label][value] = sub_tree
+        return tree
+
+    @staticmethod
+    def get_best_feat(data_set):
+        num_feats = len(data_set[0][:-1])
+        totality = len(data_set)
+        base_entropy = C45DTree.compute_entropy(data_set)
+        condition_entropy = []
+        split_info = []
+        all_feat_vlist = []
+        for f in range(num_feats):
+            feat_list = [example[f] for example in data_set]
+            split_i, feature_value_list = C45DTree.compute_split_info(feat_list)
+            all_feat_vlist.append(feature_value_list)
+            split_info.append(split_i)
+            result_gain = 0.0
+            for value in feature_value_list:
+                sub_set = C45DTree.split_data_set(data_set, f, value)
+                appear_num = float(len(sub_set))
+                sub_entropy = C45DTree.compute_entropy(sub_set)
+                result_gain += (appear_num / totality) * sub_entropy
+            condition_entropy.append(result_gain)
+        info_gain_array = base_entropy * ones(num_feats) - array(condition_entropy)
+        info_gain_ratio = info_gain_array / array(split_info)
+        best_feature_index = argsort(-info_gain_ratio)[0]
+        return best_feature_index, all_feat_vlist[best_feature_index]
+
+    @staticmethod
+    def compute_split_info(feature_vlist):
+        num_entries = len(feature_vlist)
+        feature_value_set_list = list(set(feature_vlist))
+        value_counts = [feature_vlist.count(feat_vec) for feat_vec in feature_value_set_list]
+        plist = [float(item) / num_entries for item in value_counts]
+        llist = [item * math.log(item, 2) for item in plist]
+        split_info = -sum(llist)
+        return split_info, feature_value_set_list

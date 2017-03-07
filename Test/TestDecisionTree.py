@@ -4,8 +4,7 @@ Author: Sineatos
 Date: 2017-03-07
 """
 
-from numpy import *
-from DecisionTree.DecisionTree import ID3DTree
+from DecisionTree.DecisionTree import ID3DTree, C45DTree
 from pprint import pprint as pp
 
 
@@ -20,8 +19,18 @@ def test_ID3Tree():
     # tree = ID3DTree.grab_tree(save_path)
     # pp(tree)
     vector = ['0', '1', '0', '0']  # no
-    print(ID3DTree.predict(dtree.tree, labels, vector))
+    pp(ID3DTree.predict(dtree.tree, labels, vector))
+
+
+def test_C45DTree():
+    dataset_path = "dataset.dat"
+    labels = ['age', 'revenue', 'student', 'credit']
+    dtree = C45DTree()
+    dtree.load_data_set(dataset_path, labels)
+    dtree.train()
+    pp(dtree.tree)
 
 
 if __name__ == "__main__":
-    test_ID3Tree()
+    # test_ID3Tree()
+    test_C45DTree()
