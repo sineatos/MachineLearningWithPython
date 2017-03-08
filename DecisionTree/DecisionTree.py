@@ -35,9 +35,10 @@ class ID3DTree:
         训练决策树
         """
         labels = copy.deepcopy(self.labels)
-        self.tree = self.build_tree(self.data_set, labels)
+        self.tree = ID3DTree.build_tree(self.data_set, labels)
 
-    def build_tree(self, data_set, labels):
+    @staticmethod
+    def build_tree(data_set, labels):
         """
         构造决策树
         :param data_set: 数据集，一行为一个样本
@@ -59,7 +60,7 @@ class ID3DTree:
         for value in unique_vals:
             sub_labels = labels[:]  # 复制当前的特征列表
             split_data_set = ID3DTree.split_data_set(data_set, best_feat, value)
-            sub_tree = self.build_tree(split_data_set, sub_labels)
+            sub_tree = ID3DTree.build_tree(split_data_set, sub_labels)
             tree[best_feat_label][value] = sub_tree
         return tree
 
@@ -176,7 +177,15 @@ class C45DTree(ID3DTree):
     def __init__(self):
         super(C45DTree, self).__init__()
 
-    def build_tree(self, data_set, labels):
+    def train(self):
+        """
+        训练决策树
+        """
+        labels = copy.deepcopy(self.labels)
+        self.tree = C45DTree.build_tree(self.data_set, labels)
+
+    @staticmethod
+    def build_tree(data_set, labels):
         cate_list = [data[-1] for data in data_set]
         if cate_list.count(cate_list[0]) == len(cate_list):
             return cate_list[0]
@@ -189,17 +198,22 @@ class C45DTree(ID3DTree):
         for value in feat_value_list:
             sub_labels = labels[:]
             split_data_set = C45DTree.split_data_set(data_set, best_feat, value)
-            sub_tree = self.build_tree(split_data_set, sub_labels)
+            sub_tree = C45DTree.build_tree(split_data_set, sub_labels)
             tree[best_feat_label][value] = sub_tree
         return tree
 
     @staticmethod
     def get_best_feat(data_set):
+        """
+        获取信息增益率最高的特征
+        :param data_set: 数据集
+        :return: 最大信息增益率的特征的下标,最大信息增量增益率的特征的取值列表
+        """
         num_feats = len(data_set[0][:-1])
         totality = len(data_set)
         base_entropy = C45DTree.compute_entropy(data_set)
-        condition_entropy = []
-        split_info = []
+        condition_entropy = []  # 保存信息增益
+        split_info = []  # 保存分类信息量度
         all_feat_vlist = []
         for f in range(num_feats):
             feat_list = [example[f] for example in data_set]
@@ -213,17 +227,43 @@ class C45DTree(ID3DTree):
                 sub_entropy = C45DTree.compute_entropy(sub_set)
                 result_gain += (appear_num / totality) * sub_entropy
             condition_entropy.append(result_gain)
-        info_gain_array = base_entropy * ones(num_feats) - array(condition_entropy)
-        info_gain_ratio = info_gain_array / array(split_info)
-        best_feature_index = argsort(-info_gain_ratio)[0]
+        info_gain_array = base_entropy * ones(num_feats) - array(condition_entropy)  # 求出每一个特征的信息增益，保存在一个数组中
+        # 在除以分裂信息量度的时候，分裂信息量度加上一个很小的值，保证不会发生除以零的错误
+        info_gain_ratio = info_gain_array / (array(split_info) + 1E-10)  # 求出每一个特征的信息增益率
+        best_feature_index = argsort(-info_gain_ratio)[0]  # 返回信息增益率最大的特征的下标
         return best_feature_index, all_feat_vlist[best_feature_index]
 
     @staticmethod
     def compute_split_info(feature_vlist):
-        num_entries = len(feature_vlist)
-        feature_value_set_list = list(set(feature_vlist))
-        value_counts = [feature_vlist.count(feat_vec) for feat_vec in feature_value_set_list]
-        plist = [float(item) / num_entries for item in value_counts]
+        """
+        计算分裂信息量度
+        :param feature_vlist: 某一个特征在样本集中的所有取值
+        :return: 分裂信息量度,特征的取值种类列表
+        """
+        num_entries = len(feature_vlist)  # 样本集规模
+        feature_value_set_list = list(set(feature_vlist))  # 特征的取值种类
+        value_counts = [feature_vlist.count(feat_vec) for feat_vec in feature_value_set_list]  # 统计特种取值的各种种类在样本集中出现的频数
+        plist = [float(item) / num_entries for item in value_counts]  # 频数/样本集规模 (求出现频率)
         llist = [item * math.log(item, 2) for item in plist]
-        split_info = -sum(llist)
+        split_info = -sum(llist)  # 求出分裂信息量度
         return split_info, feature_value_set_list
+
+    @staticmethod
+    def predict(input_tree, feat_labels, test_vec):
+        """
+        预测分类
+        :param input_tree: 决策树字典
+        :param feat_labels: 特征列表
+        :param test_vec: 一组数据
+        :return: 预测的分类标识
+        """
+        root = tuple(input_tree.keys())[0]  # 获取树根节点(划分特征标识)
+        second_dict = input_tree[root]  # value-子树结构或分类标签
+        feat_index = feat_labels.index(root)  # 划分特征标识在分类标签集中的位置
+        key = test_vec[feat_index]  # 测试数据的划分特征取值
+        value_of_feat = second_dict[key]  # 找出对应取值的分支
+        if isinstance(value_of_feat, dict):
+            class_label = C45DTree.predict(value_of_feat, feat_labels, test_vec)
+        else:
+            class_label = value_of_feat
+        return class_label

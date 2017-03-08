@@ -29,6 +29,8 @@ def test_C45DTree():
     dtree.load_data_set(dataset_path, labels)
     dtree.train()
     pp(dtree.tree)
+    vector = ['2', '1', '0', '0']  # yes
+    pp(ID3DTree.predict(dtree.tree, labels, vector))
 
 
 if __name__ == "__main__":
